@@ -1,0 +1,77 @@
+/**
+ * Paradieschen Kistengenerator - Farbschema
+ * Basierend auf den echten Farben von paradieschen.de
+ */
+
+:root {
+  /* Paradieschen Hauptfarben */
+  --primary-dark: #1a472a;        /* Dunkelgrün - Header, Sidebar */
+  --primary: #2d8a4e;             /* Mittelgrün - Buttons, Links */
+  --primary-light: #8cc63f;       /* Hellgrün - Hover, Akzente */
+  --accent-brown: #5a3e28;        /* Braun - Überschriften, wichtiger Text */
+  --accent-yellow: #f9b233;       /* Warmgelb - Highlights */
+  --accent-orange: #e8792b;       /* Orange - CTA-Buttons, Warnungen */
+  
+  /* Hintergründe */
+  --bg-cream: #faf8f5;            /* Cremeweiß - Seitenhintergrund */
+  --bg-white: #ffffff;            /* Weiß - Karten */
+  --bg-green-light: #f0f7eb;      /* Sehr helles Grün - Hover-Zeilen */
+  --bg-dark: #1a1a1a;             /* Dunkel für Kontraste */
+  
+  /* Text */
+  --text-dark: #2c2c2c;           /* Haupttext */
+  --text-medium: #666666;         /* Sekundärtext */
+  --text-light: #999999;          /* Platzhalter */
+  --text-white: #ffffff;          /* Text auf dunklem Hintergrund */
+  --text-brown: #5a3e28;          /* Braun für Überschriften */
+  
+  /* Rahmen */
+  --border-light: #e8e4df;        /* Helle Rahmen */
+  --border-medium: #d1ccc6;       /* Mittlere Rahmen */
+  
+  /* Kategorie-Farben (passend zu Paradieschen) */
+  --cat-gemuese: #2d8a4e;         /* Grün */
+  --cat-gemuese-light: #e8f5ed;
+  --cat-obst: #f9b233;            /* Warmgelb/Orange */
+  --cat-obst-light: #fef7e8;
+  --cat-rohkost: #8cc63f;         /* Hellgrün */
+  --cat-rohkost-light: #f4fae8;
+  --cat-salat: #1a472a;           /* Dunkelgrün */
+  --cat-salat-light: #e3ede7;
+  --cat-kraeuter: #6baf3d;        /* Kräutergrün */
+  --cat-kraeuter-light: #f0f9eb;
+  
+  /* Status-Farben */
+  --success: #2d8a4e;
+  --success-light: #e8f5ed;
+  --warning: #f9b233;
+  --warning-light: #fef7e8;
+  --error: #d94f4f;
+  --error-light: #fdeaea;
+  --info: #4a90d9;
+  --info-light: #e8f3fc;
+  
+  /* Abstände */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+  
+  /* Schatten (mit Paradieschen-Grün) */
+  --shadow-sm: 0 1px 3px rgba(26, 71, 42, 0.08);
+  --shadow-md: 0 4px 12px rgba(26, 71, 42, 0.12);
+  --shadow-lg: 0 8px 24px rgba(26, 71, 42, 0.16);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+}

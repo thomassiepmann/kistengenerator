@@ -1,0 +1,125 @@
+.historie {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Toolbar */
+.historie-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.toolbar-left p {
+  margin: 0;
+}
+
+/* Tabelle */
+.historie-table-container {
+  background-color: var(--bg-white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Modal Large */
+.modal-large {
+  max-width: 700px;
+}
+
+.detail-info {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--bg-green-light);
+  border-radius: var(--radius-md);
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.info-label {
+  font-size: 0.85rem;
+  color: var(--text-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 1.1rem;
+}
+
+.modal-body h3 {
+  color: var(--accent-brown);
+  margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+  font-size: 1.1rem;
+}
+
+.artikel-list,
+.mengen-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.artikel-item,
+.menge-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.artikel-slot,
+.menge-slot {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.artikel-name,
+.menge-value {
+  color: var(--text-dark);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .historie-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-left {
+    flex-direction: column;
+  }
+
+  .historie-table-container {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 600px;
+  }
+
+  .detail-info {
+    grid-template-columns: 1fr;
+  }
+}

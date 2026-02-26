@@ -1,0 +1,31 @@
+.layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.layout-main {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.layout-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-xl);
+  background-color: var(--bg-cream);
+}
+
+@media (max-width: 768px) {
+  .layout-main {
+    margin-left: 70px;
+  }
+
+  .layout-content {
+    padding: var(--spacing-md);
+  }
+}
