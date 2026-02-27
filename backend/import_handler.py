@@ -313,40 +313,93 @@ def import_wochenquelle_from_excel(db: Session, file_content: bytes) -> dict:
 def import_masterplan_from_excel(db: Session, file_content: bytes) -> dict:
     """
     Importiert Masterplan-Matrix aus Excel.
-    Erwartete Struktur: Erste Spalte = Kistentyp, weitere Spalten = Slots mit 'x' Markierung
+    Erwartete Struktur: 
+    - Spalte 1: Sortiment (Kistentyp)
+    - Spalte 2: Größe (S/M/L/XL)
+    - Spalte 3: Preis (optional)
+    - Weitere Spalten: Slots mit 'x' Markierung
     """
     try:
-        df = pd.read_excel(BytesIO(file_content))
+        df = pd.read_excel(BytesIO(file_content), sheet_name='Masterplan')
         
-        if df.shape[1] < 2:
+        if df.shape[1] < 4:
             return {
                 "status": "fehler",
-                "grund": "Excel muss mindestens 2 Spalten haben (Kistentyp + Slots)"
+                "grund": "Excel muss mindestens 4 Spalten haben (Sortiment, Größe, Preis, Slots)"
             }
         
         imported_mp = 0
         imported_slots = 0
+        updated_mp = 0
         errors = []
         
-        kistentyp_col = df.columns[0]
-        slot_cols = df.columns[1:]
+        # Spalten identifizieren
+        sortiment_col = df.columns[0]  # "Sortiment"
+        groesse_col = df.columns[1]     # "Größe"
+        preis_col = df.columns[2]       # "Preis"
+        slot_cols = df.columns[3:]      # Alle Slot-Spalten
         
         for idx, row in df.iterrows():
             try:
-                kistentyp = str(row[kistentyp_col]).strip()
-                if not kistentyp or kistentyp.lower() == 'nan':
+                sortiment = str(row[sortiment_col]).strip()
+                
+                # Leere Zeilen oder Header überspringen
+                if not sortiment or sortiment.lower() == 'nan' or sortiment == 'Sortiment':
                     continue
                 
-                # Masterplan anlegen/finden
-                mp = db.query(Masterplan).filter(Masterplan.name == kistentyp).first()
-                if not mp:
-                    # Defaults setzen
+                # Größe extrahieren
+                groesse = str(row[groesse_col]).strip() if pd.notna(row[groesse_col]) else "M"
+                if groesse.lower() == 'nan' or not groesse:
+                    groesse = "M"
+                
+                # Größe normalisieren
+                groesse_map = {
+                    'S': 'S', 's': 'S',
+                    'M': 'M', 'm': 'M',
+                    'L': 'L', 'l': 'L',
+                    'XL': 'XL', 'xl': 'XL', 'Xl': 'XL'
+                }
+                groesse = groesse_map.get(groesse, 'M')
+                
+                # Preis extrahieren
+                preis = None
+                if pd.notna(row[preis_col]):
+                    try:
+                        preis = float(row[preis_col])
+                    except:
+                        preis = None
+                
+                # Zielpreis-Bereich festlegen
+                if preis:
+                    zielpreis_min = preis * 0.9  # -10%
+                    zielpreis_max = preis * 1.1  # +10%
+                else:
+                    # Defaults basierend auf Größe
+                    preis_defaults = {
+                        'S': (12.0, 18.0),
+                        'M': (18.0, 28.0),
+                        'L': (25.0, 35.0),
+                        'XL': (30.0, 40.0)
+                    }
+                    zielpreis_min, zielpreis_max = preis_defaults.get(groesse, (15.0, 25.0))
+                
+                # Masterplan anlegen oder aktualisieren
+                mp = db.query(Masterplan).filter(Masterplan.name == sortiment).first()
+                if mp:
+                    # Update
+                    mp.groesse = groesse
+                    mp.zielpreis_min = zielpreis_min
+                    mp.zielpreis_max = zielpreis_max
+                    mp.ist_aktiv = True
+                    updated_mp += 1
+                else:
+                    # Neu anlegen
                     mp = Masterplan(
-                        name=kistentyp,
-                        beschreibung=f"Importiert aus Excel",
-                        groesse="M",
-                        zielpreis_min=10.0,
-                        zielpreis_max=20.0,
+                        name=sortiment,
+                        beschreibung=f"Importiert aus Excel - {groesse}-Kiste",
+                        groesse=groesse,
+                        zielpreis_min=zielpreis_min,
+                        zielpreis_max=zielpreis_max,
                         ist_aktiv=True
                     )
                     db.add(mp)
@@ -360,8 +413,25 @@ def import_masterplan_from_excel(db: Session, file_content: bytes) -> dict:
                 slot_nr = 1
                 for slot_name in slot_cols:
                     if pd.notna(row[slot_name]) and str(row[slot_name]).strip().lower() in ['x', '1', 'ja', 'yes']:
-                        # Kategorie aus Slot-Name extrahieren (z.B. "Gemüse 1" -> "Gemüse")
-                        kategorie = slot_name.rsplit(' ', 1)[0] if ' ' in slot_name else slot_name
+                        # Kategorie aus Slot-Name extrahieren
+                        # z.B. "Gemüse 1" -> "Gemuese", "Rohkost MK1" -> "Rohkost"
+                        kategorie_raw = slot_name.strip()
+                        
+                        # Nummer und Suffix entfernen
+                        kategorie = kategorie_raw.split()[0] if ' ' in kategorie_raw else kategorie_raw
+                        
+                        # Kategorie-Mapping für Konsistenz
+                        kategorie_map = {
+                            'Gemüse': 'Gemuese',
+                            'Gemuese': 'Gemuese',
+                            'Rohkost': 'Rohkost',
+                            'Salat': 'Salat',
+                            'Obst': 'Obst',
+                            'Reg.Gem.': 'Gemuese',
+                            'Reg.Obst': 'Obst',
+                            'Reg.Rohkost': 'Rohkost'
+                        }
+                        kategorie = kategorie_map.get(kategorie, kategorie)
                         
                         slot = MasterplanSlot(
                             masterplan_id=mp.id,
@@ -374,14 +444,15 @@ def import_masterplan_from_excel(db: Session, file_content: bytes) -> dict:
                         slot_nr += 1
                 
             except Exception as e:
-                errors.append(f"Zeile {idx + 2}: {str(e)}")
+                errors.append(f"Zeile {idx + 2} ({sortiment if 'sortiment' in locals() else 'unbekannt'}): {str(e)}")
         
         db.commit()
         
         return {
             "status": "erfolg",
-            "masterplaene": imported_mp,
-            "slots": imported_slots,
+            "neu_erstellt": imported_mp,
+            "aktualisiert": updated_mp,
+            "slots_gesamt": imported_slots,
             "fehler": errors
         }
         
