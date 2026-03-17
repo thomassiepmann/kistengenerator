@@ -169,8 +169,6 @@ def import_masterplan_from_excel(db: Session, file_content: bytes) -> dict:
                     db.flush()  # ID zuweisen
                     imported_mp += 1
 
-                    import mp
-
                 # Zielpreis nach Erstellung neu holen (wenn Masterplan-ID existiert)
                 if not preis_range and mp.id:
                     preis_range = get_festpreis_range(db, mp.id, groesse)
@@ -496,7 +494,50 @@ def import_tauschmuster_from_excel(db: Session, file_content: bytes, kw: int = N
 
 def import_artikel_from_excel(db: Session, file_content: bytes) -> dict:
     """Legacy: Importiert Artikel aus Excel (alte Struktur)."""
-    import_artikel
+    # Alte Implementierung für Kompatibilität
+    try:
+        df = pd.read_excel(BytesIO(file_content))
+
+        required_cols = ['SID', 'Name', 'Kategorie', 'Einheit']
+        missing = [col for col in required_cols if col not in df.columns]
+        if missing:
+            return {"status": "fehler", "grund": f"Fehlende Spalten: {', '.join(missing)}"}
+
+        imported = 0
+        updated = 0
+        errors = []
+
+        for idx, row in df.iterrows():
+            try:
+                sid = str(row['SID']).strip()
+                name = str(row['Name']).strip()
+                kategorie = str(row['Kategorie']).strip()
+                einheit = str(row['Einheit']).strip()
+                status = str(row.get('Status', 'aktiv')).strip()
+
+                artikel = db.query(ArtikelStamm).filter(ArtikelStamm.sid == sid).first()
+
+                if artikel:
+                    artikel.name = name
+                    artikel.kategorie = kategorie
+                    artikel.einheit = einheit
+                    artikel.status = status
+                    updated += 1
+                else:
+                    artikel = ArtikelStamm(
+                        sid=sid, name=name, kategorie=kategorie,
+                        einheit=einheit, status=status
+                    )
+                    db.add(artikel)
+                    imported += 1
+
+            except Exception as e:
+                errors.append(f"Zeile {idx + 2}: {str(e)}")
+
+        db.commit()
+        return {"status": "erfolg", "importiert": imported, "aktualisiert": updated, "fehler": errors}
+    except Exception as e:
+        return {"status": "fehler", "grund": f"Excel-Verarbeitung fehlgeschlagen: {str(e)}"}
 
 def import_historie_from_excel(db: Session, file_content: bytes) -> dict:
     """Legacy: Importiert historische Sortimente."""
@@ -573,7 +614,45 @@ def import_historie_from_excel(db: Session, file_content: bytes) -> dict:
 
 def import_preise_from_excel(db: Session, file_content: bytes) -> dict:
     """Legacy: Importiert Preise aus Excel."""
-    import_preise
+    try:
+        df = pd.read_excel(BytesIO(file_content))
+
+        required_cols = ['Artikel_SID', 'Preis', 'Gueltig_ab']
+        missing = [col for col in required_cols if col not in df.columns]
+        if missing:
+            return {"status": "fehler", "grund": f"Fehlende Spalten: {', '.join(missing)}"}
+
+        imported = 0
+        errors = []
+
+        for idx, row in df.iterrows():
+            try:
+                sid = str(row['Artikel_SID']).strip()
+                preis = float(row['Preis'])
+                gueltig_ab = str(row['Gueltig_ab'])
+                gueltig_bis = str(row.get('Gueltig_bis', '')) if pd.notna(row.get('Gueltig_bis')) else None
+
+                artikel = db.query(ArtikelStamm).filter(ArtikelStamm.sid == sid).first()
+                if not artikel:
+                    errors.append(f"Zeile {idx + 2}: Artikel SID '{sid}' nicht gefunden")
+                    continue
+
+                preis_obj = PreisPflege(
+                    artikel_id=artikel.id,
+                    preis_pro_einheit=preis,
+                    gueltig_ab=gueltig_ab,
+                    gueltig_bis=gueltig_bis
+                )
+                db.add(preis_obj)
+                imported += 1
+
+            except Exception as e:
+                errors.append(f"Zeile {idx + 2}: {str(e)}")
+
+        db.commit()
+        return {"status": "erfolg", "importiert": imported, "fehler": errors}
+    except Exception as e:
+        return {"status": "fehler", "grund": f"Excel-Verarbeitung fehlgeschlagen: {str(e)}"}
 
 def create_excel_template(template_type: str) -> bytes:
     """Erstellt Excel-Vorlagen."""
