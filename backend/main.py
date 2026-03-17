@@ -538,11 +538,41 @@ async def import_preise(file: UploadFile = File(...), db: Session = Depends(get_
 
 
 @app.post("/api/import/wochenquelle")
-async def import_wochenquelle(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    """Importiert Wochenquelle aus Excel-Datei."""
+async def import_wochenquelle(
+    file: UploadFile = File(...),
+    kw: int = None,
+    jahr: int = None,
+    db: Session = Depends(get_db)
+):
+    """Importiert Wochenquelle aus Excel-Datei. KW und Jahr als Query-Parameter."""
     from import_handler import import_wochenquelle_from_excel
+
+    if kw is None or jahr is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Parameter 'kw' und 'jahr' sind erforderlich (z.B. ?kw=12&jahr=2025)"
+        )
+
     content = await file.read()
-    result = import_wochenquelle_from_excel(db, content)
+    result = import_wochenquelle_from_excel(db, content, kw, jahr)
+    return result
+
+
+@app.post("/api/import/tauschmuster")
+async def import_tauschmuster(
+    file: UploadFile = File(...),
+    kw: int = None,
+    jahr: int = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Importiert Tauschmuster aus Excel-Datei.
+    Importiert ArtikelStamm (SID+Name+Einheit+Kategorie) und PreisPflege (aktueller Preis).
+    """
+    from import_handler import import_tauschmuster_from_excel
+
+    content = await file.read()
+    result = import_tauschmuster_from_excel(db, content, kw, jahr)
     return result
 
 
