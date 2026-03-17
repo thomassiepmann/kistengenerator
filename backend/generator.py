@@ -140,6 +140,22 @@ def generiere_kiste(db: Session, sortiment_typ: str, groesse: str, kw: int, jahr
     if not masterplan:
         return {"status": "fehler", "grund": f"Masterplan '{sortiment_typ}' nicht gefunden"}
 
+    # Zielpreis aus KistenFestpreis-Tabelle laden
+    from datetime import date
+    heute = date.today().isoformat()
+    festpreis_obj = db.query(KistenFestpreis).filter(
+        KistenFestpreis.masterplan_id == masterplan.id,
+        KistenFestpreis.groesse == groesse,
+        KistenFestpreis.ist_aktiv == True,
+        KistenFestpreis.gueltig_ab <= heute,
+        (KistenFestpreis.gueltig_bis == None) |
+        (KistenFestpreis.gueltig_bis >= heute)
+    ).order_by(KistenFestpreis.gueltig_ab.desc()).first()
+
+    if festpreis_obj:
+        masterplan.zielpreis_min = festpreis_obj.festpreis * 0.97
+        masterplan.zielpreis_max = festpreis_obj.festpreis * 1.03
+
     quelle_artikel = lade_wochenquelle_als_artikel(db, kw, jahr)
     if not quelle_artikel:
         return {"status": "fehler", "grund": f"Keine Wochenquelle fuer KW{kw}/{jahr} geplant"}
